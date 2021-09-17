@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="39a22470-0603-46cd-b7e2-d7a2a7eb546f" basePath="/getData" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="24eed059-33cd-41f1-a209-9d8ed5e934b2" basePath="/v3/910cd950-175b-407b-8485-64ad3a299f4a" >
+		<http:request-connection host="run.mocky" />
+	</http:request-config>
+	<flow name="getpayloaddataFlow" doc:id="eda48ab7-9081-4288-a6bf-df9d8bfc03a4" >
+		<http:listener doc:name="Listener" doc:id="9939d6c8-c802-419c-9d3d-e552f455f87b" config-ref="HTTP_Listener_config" path="/" allowedMethods="GET">
+			<reconnect-forever />
+		</http:listener>
+		<set-variable value="oauth2.0" doc:name="Set Variable" doc:id="56dac5bb-e2a3-4422-acb7-054620627305" variableName="transactionType"/>
+		<ee:transform doc:name="Transform Message" doc:id="a5589c1f-a341-4d72-808d-d58fd2fbe13e">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var transactionId = "12a"
+---
+{
+	message: if(message.attributes.headers.clientId == "123") 123
+	else message.attributes.headers.clientId,
+	transactionId: transactionId,
+	transactionType: vars.transactionType
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="4196433a-1379-4a01-acae-d35d4874ddfe" message="#[payload]"/>
+		<http:request method="GET" doc:name="Request" doc:id="a5fc89de-8977-4f08-a30f-2611068fa90d" config-ref="HTTP_Request_configuration" path="/"/>
+		<set-payload value="#['Sorry ' ++ payload.car as String  ++ ', you are too young to register.']" doc:name="Set Payload" doc:id="4bd3d04d-2eb1-4342-aa3a-3c020b4841ca" />
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="27b26f34-c800-4eb6-976a-158df5a6aa19" type="HTTP:NOT_FOUND">
+				<logger level="INFO" doc:name="Logger" doc:id="3a7048fd-f7a6-493c-ad46-4ed16a3591ea" message="#[error.detailedDescription]"/>
+			</on-error-propagate>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="3b6e556d-e762-41f6-875d-7a9b604e721d" type="EXPRESSION">
+				<logger level="INFO" doc:name="Logger" doc:id="723fe353-081c-44f8-ba10-4ce7be078928" message="Logging on error continue   #[payload]  #[error.errorType]"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>
