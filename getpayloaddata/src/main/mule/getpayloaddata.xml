@@ -9,10 +9,11 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<http:listener-connection host="0.0.0.0" port="8082" />
 	</http:listener-config>
 	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="24eed059-33cd-41f1-a209-9d8ed5e934b2" basePath="/v3/910cd950-175b-407b-8485-64ad3a299f4a" >
-		<http:request-connection host="run.mocky.io" />
+		<http:request-connection host="run.mocky" />
 	</http:request-config>
 	<flow name="getpayloaddataFlow" doc:id="eda48ab7-9081-4288-a6bf-df9d8bfc03a4" >
 		<http:listener doc:name="Listener" doc:id="9939d6c8-c802-419c-9d3d-e552f455f87b" config-ref="HTTP_Listener_config" path="/" allowedMethods="GET">
+			<ee:repeatable-file-store-stream bufferUnit="BYTE" />
 			<reconnect-forever />
 		</http:listener>
 		<set-variable value="oauth2.0" doc:name="Set Variable" doc:id="56dac5bb-e2a3-4422-acb7-054620627305" variableName="transactionType"/>
@@ -21,18 +22,31 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 var transactionId = "12a"
+var arr  =[0,1,2,3,4,5,6]
+var startinx = 2
+var endinx = 4
+var user = [{"firstname":"Priya","lastname":"Anand","address":"Norwich"},{"firstname":"vfhj","lastname":"Anand11"}]
+//fun getName(data) = (data.firstname[] ++ "" ++ data.lastname[])
 ---
+
 {
-	message: if(message.attributes.headers.clientId == "123") 123
+	//"getName": getName(user),
+     xyz:user groupBy((value,key)->if(key contains 'name')"Names" else "Address"),
+     filterName:user filter($.firstname contains "Pri"),
+	 message: if(message.attributes.headers.clientId == "123") 123
 	else message.attributes.headers.clientId,
-	transactionId: transactionId,
-	transactionType: vars.transactionType
+	"transactionId": transactionId,
+	 nullinput: null filter($.lastname != 'naik'),
+	"transactionType": vars.transactionType,
+	 atype:typeOf("Priya"),
+	 size:sizeOf([1,2,3,5]),
+	 upper:upper("Priya"),
+	 substring:"Priya"[1 to 3],
+	 subArray: arr[startinx to endinx]
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<logger level="INFO" doc:name="Logger" doc:id="4196433a-1379-4a01-acae-d35d4874ddfe" message="#[payload]"/>
-		<http:request method="GET" doc:name="Request" doc:id="a5fc89de-8977-4f08-a30f-2611068fa90d" config-ref="HTTP_Request_configuration" path="/"/>
-		<set-payload value="#['Sorry ' ++ payload.car as String  ++ ', you are too young to register.']" doc:name="Set Payload" doc:id="4bd3d04d-2eb1-4342-aa3a-3c020b4841ca" />
+		<flow-ref doc:name="Flow Reference" doc:id="a4792728-9d4e-4bde-83a4-9a6e17887d7c" name="getpayloaddataSub_Flow"/>
 		<error-handler>
 			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="27b26f34-c800-4eb6-976a-158df5a6aa19" type="HTTP:NOT_FOUND">
 				<logger level="INFO" doc:name="Logger" doc:id="3a7048fd-f7a6-493c-ad46-4ed16a3591ea" message="#[error.detailedDescription]"/>
@@ -42,4 +56,9 @@ var transactionId = "12a"
 			</on-error-continue>
 		</error-handler>
 	</flow>
+	<sub-flow name="getpayloaddataSub_Flow" doc:id="bce68bc4-acc3-4c2b-a619-5937e93fdbb3" >
+		<logger level="INFO" doc:name="Logger" doc:id="4196433a-1379-4a01-acae-d35d4874ddfe" message="#[payload]" />
+		<http:request method="GET" doc:name="Request" doc:id="a5fc89de-8977-4f08-a30f-2611068fa90d" config-ref="HTTP_Request_configuration" path="/" />
+		<set-payload value="#['Sorry ' ++ payload.name as String  ++ ', you are too young to register.']" doc:name="Set Payload" doc:id="4bd3d04d-2eb1-4342-aa3a-3c020b4841ca" />
+	</sub-flow>
 </mule>
