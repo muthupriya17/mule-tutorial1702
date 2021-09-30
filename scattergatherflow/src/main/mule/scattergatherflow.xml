@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="38245117-a286-40ac-ac4b-fa31612d3cf4" basePath="/logscatteraggregate" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="scattergatherflowFlow" doc:id="7848074c-db7e-452e-a18e-1ff5aa1adab9" >
+		<http:listener doc:name="HttpListener" doc:id="7c4bb5e1-6419-423e-a37f-478192596fff" config-ref="HTTP_Listener_config" path="/" allowedMethods="POST"/>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="96bcc484-908a-43af-ac3b-5f2bed60b341" >
+			<route >
+				<ee:transform doc:name="Transform Message A" doc:id="c96539bd-54db-404f-b843-41a23615cdca" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	planet: payload.planets.*planet filter($.name contains  "Mercury")
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger A" doc:id="809fcc36-0db4-4bf4-9f45-d79ab8686abd" message="Logging message for path A #[payload]"/>
+			</route>
+			<route >
+				<ee:transform doc:name="Transform Message B" doc:id="68aa53bc-89a9-4c95-a376-8869894f0e63" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	planet1: payload.planets.*planet filter($.name contains  "Earth")
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger B" doc:id="ac0008d3-91c8-4de0-9b0b-d736ab0dde61" message="Logging message for path B #[payload]"/>
+			</route>
+		</scatter-gather>
+		<logger level="INFO" doc:name="Logger" doc:id="a85a30ab-512c-4445-90b2-40b8b94238cd" message='Logging after gather #[payload."0".payload ++ payload."1".payload]'/>
+		<ee:transform doc:name="Transform Message Aggregate" doc:id="40f7e8a0-7a8f-486a-8bbf-f24c3e90797a">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	planets: payload."0".payload ++ payload."1".payload
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
