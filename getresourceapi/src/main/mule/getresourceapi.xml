@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="dd7ddfaf-3918-4830-968a-bf8359021314" basePath="/getName" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	
+	<flow name="getresourceapiFlow1" doc:id="e6e54e16-1c29-4409-a3c1-923392eeb042" >
+		<http:listener doc:name="Listener" doc:id="c0bf0545-7f60-4cb2-86ea-85ac9422286f" config-ref="HTTP_Listener_config1" allowedMethods="GET" path="/{paramname}">
+			<ee:repeatable-file-store-stream bufferUnit="MB" />
+		</http:listener>
+		<set-payload value="#[attributes.uriParams.paramname]" doc:name="Set Payload" doc:id="2979edad-887c-41f9-9227-5ecaff522d2e" />
+		<set-variable value="#[message.payload]" doc:name="Set Variable" doc:id="b3433943-7eac-40ab-b2a6-3c6d220c3436" variableName="firstName"/>
+		<set-variable value="#[message.attributes.headers.transactionId]" doc:name="Set Variable" doc:id="d512cb22-ddc6-4a74-aa94-61fd4c287183" variableName="deptName"/>
+		<logger level="INFO" doc:name="Logger" doc:id="b3ba373b-b345-4276-bca5-d6be52808a84" message="Logging the uri parameters #[attributes.uriParams.paramname] for variable FN #[vars.firstName]  with query parameters #[message.attributes.queryParams] and first QP #[message.attributes.queryParams[0]] -- second QP #[message.attributes.queryParams[1]] var DN #[vars.deptName]"/>
+	</flow>
+	
+</mule>
