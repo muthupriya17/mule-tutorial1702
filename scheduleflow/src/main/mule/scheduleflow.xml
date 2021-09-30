@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config"
+		doc:name="HTTP Listener config"
+		doc:id="f5f5b789-6fd3-407f-98f1-458bf1ea274f" basePath="/logaggregate">
+		<http:listener-connection host="0.0.0.0"
+			port="8082" connectionIdleTimeout="10000" usePersistentConnections="false">
+			<reconnection />
+		</http:listener-connection>
+	</http:listener-config>
+	<!-- <flow name="scheduleflowFlow" doc:id="ff4a4918-1c05-446a-9fb4-f34ad5b6b769" 
+		> <scheduler doc:name="Scheduler" doc:id="c52ca47e-d3bb-45f7-ad02-02b491ca365a" 
+		> <scheduling-strategy > <cron expression="* * * * 60 ?" timeZone="America/Los_Angeles" 
+		/> </scheduling-strategy> </scheduler> <logger level="INFO" doc:name="Logger" 
+		doc:id="27006d05-bcd0-4abd-a1f3-8f7c6ee6d6d6" message="Scheduler starts"/> 
+		</flow> -->
+	<flow name="scheduleflowFlow1"
+		doc:id="2860e66b-628d-489d-b409-509111923b9a">
+		<http:listener doc:name="Listener"
+			doc:id="156d894e-70b0-4de4-98f4-b101e24d6635"
+			config-ref="HTTP_Listener_config" allowedMethods="POST" path="/" />
+		<ee:transform doc:name="Transform Message" doc:id="0faa6ba6-4cc6-464a-8d03-655398be2341" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var planetVar = ["Venus", "Mercury","Earth"]
+	
+---
+
+inputVar : planetVar]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-payload value="#[payload]" doc:name="Set Payload"
+			doc:id="8079dc41-1575-4ce5-bf57-ea1a21d0fded" />
+		<scatter-gather doc:name="Scatter-Gather"
+			doc:id="d9c002a1-de37-4124-944e-8f48d1b6e478">
+			<route>
+				<ee:transform doc:name="Transform Message A"
+					doc:id="25781d16-3e3f-4e6d-b779-0e00c66f7c7d">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	//payload filter
+	//planet: payload.planets.planet filter($.name contains "Mercury")
+	//planet : payload.planets.*planet map((item,index)->{name:item.name})
+	planet: payload.planets.*planet1 filter($.name1 contains  "Mercury")
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-payload value="#[payload]" doc:name="Set Payload"
+					doc:id="1756fea3-8153-4289-a2b3-6b38de39565e"/>
+				<logger level="INFO" doc:name="Logger A"
+					doc:id="ad941041-16c5-48c3-88b4-f7508af5223c"
+					message="Logging for planet mercury  #[payload]" />
+			</route>
+			<route>
+				<ee:transform doc:name="Transform Message B"
+					doc:id="0b79e87c-7f05-4893-bdee-98999983af0f">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+	//planet1: payload.planets.planet filter($.name contains "Earth")
+	planet1: payload.planets.*planet filter($.name contains  "Earth")
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-payload value="#[payload]" doc:name="Set Payload"
+					doc:id="7ec201ed-49e6-4e24-9439-7ed359c38d4c"/>
+				<logger level="INFO" doc:name="Logger B"
+					doc:id="dc004d5a-b69e-48f5-8827-d19d85baf171"
+					message="Logging for planet earth #[payload]" />
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="f21eae91-3abb-4d1e-86d3-c0cdf6625959" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+flatten (payload..payload)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger"
+			doc:id="26c22541-7e4e-4e95-bffb-07dd8616e801"
+			message="Logging for aggregate  #[payload]" />
+	</flow>
+</mule>
