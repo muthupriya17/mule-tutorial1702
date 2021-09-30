@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="91f75820-9652-4349-915b-91377ab9b9c4" basePath="/getListenerEx" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="learnhttplistenerFlow" doc:id="50fccdc1-eb3c-4a44-992a-1ba6756ecac3" >
+		<http:listener doc:name="Http_Listener" doc:id="107b1888-2292-4166-ad21-2295bcd4e220" config-ref="HTTP_Listener_config" path="/" allowedMethods="GET">
+			<repeatable-in-memory-stream bufferUnit="BYTE" />
+		</http:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="e6d011c8-a48d-4d60-87e7-b79a8b829778" message="Logging for httplistener message attribute -  #[attributes.queryString]"/>
+	</flow>
+	<flow name="pathFlow1" doc:id="7a51ea62-6b85-4ce3-912b-f06d67a767bf" >
+		<http:listener doc:name="Account_Listener" doc:id="dee50001-5205-4934-8c28-0470f97336a5" config-ref="HTTP_Listener_config" path="/account" allowedMethods="GET"/>
+		<logger level="INFO" doc:name="Logger" doc:id="951e6637-ce84-4cc6-994c-9f1bb2d7cebb" message="Logging for path #[attributes.listenerPath]"/>
+	</flow>
+	<flow name="pathFlow2" doc:id="46b2b647-357e-4b10-b8ef-81875ce3a3e2" >
+		<http:listener doc:name="Employee_Listener" doc:id="6da29a6f-5451-439f-9851-e7a943fd438a" config-ref="HTTP_Listener_config" path="/employee" allowedMethods="GET"/>
+		<logger level="INFO" doc:name="Logger" doc:id="2d2f70ed-2692-4b9e-a87d-e504c6507db2" message="Logging for path #[attributes.listenerPath]"/>
+	</flow>
+	<flow name="wildcardFlow3" doc:id="d39b9c42-d1aa-4f80-92ba-501aff96293f" >
+		<http:listener doc:name="Wildcardpath_Listener" doc:id="298757eb-ef73-4941-bce0-83c966292953" config-ref="HTTP_Listener_config" path="/account/*/main-contact" allowedMethods="GET"/>
+		<logger level="INFO" doc:name="Logger" doc:id="bbb0a9d8-ba87-4e7f-bb49-2b67b2a71f0b" message="Logging for listener path  #[attributes.listenerPath] Request path #[attributes.requestUri]"/>
+	</flow>
+	<flow name="GETMethodFlow4" doc:id="fa5abaed-e8f8-414a-af68-68dee417ac46" >
+		<http:listener doc:name="Get_Method_Listener" doc:id="87adfbb4-ed6d-493f-b3de-7dabbf39acb7" config-ref="HTTP_Listener_config" path="/requests" allowedMethods="GET"/>
+		<set-payload value="foo" doc:name="Set Payload" doc:id="b3d3c647-0bc2-4675-b96c-22edec13e92b" />
+	</flow>
+	<flow name="POSTMethodFlow" doc:id="0d4776e1-860e-458f-9ac5-ae75918cbd3a" >
+		<http:listener doc:name="Post_Method_Listener" doc:id="1a43b5c7-e667-4fc9-bd13-e1d47759325b" config-ref="HTTP_Listener_config" path="/requests" allowedMethods="POST"/>
+		<set-payload value="bar" doc:name="Set Payload" doc:id="1894a2a7-0b6f-4b44-bf6a-f732ba9a3d06" />
+	</flow>
+	<flow name="learnhttplistenerFlow1" doc:id="febcb520-5f20-4366-a2cc-42455b43280e" >
+		<http:listener doc:name="Form_Data_Listener" doc:id="ca3d4b7c-9aa4-4abc-93c4-8706cc665c7b" config-ref="HTTP_Listener_config" path="/submitform"/>
+		<logger level="INFO" doc:name="Logger" doc:id="aef69680-d25d-4afe-b304-4588277c1efe" message="Logging the choice expression value #[now().year-18 &lt; payload.'yearborn']"/>
+		<choice doc:name="Choice" doc:id="ee548573-36a5-456c-a11a-9d955a25eeff" >
+			<when expression="#[now().year-18 &lt; payload.'yearborn']">
+				<set-payload value="#['Sorry ' ++ payload.firstname as String  ++ ', you are too young to register.']" doc:name="Too young" doc:id="daa2d4c3-f2a5-4cd3-93a0-0a2aca7e5f71" />
+			</when>
+			<otherwise >
+				<set-payload value="#['Registration has been carried out successfully! Welcome ' ++ payload.'firstname' ++ payload.'lastname' ++ '!']" doc:name="Success" doc:id="8a3bb4ef-dcba-4ad2-a46d-e448855b33df" />
+			</otherwise>
+		</choice>
+	</flow>
+</mule>
