@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<file:config name="sample" doc:name="File Config" doc:id="9a63f222-c67c-44b1-a63c-5a8a21c0c5b1" >
+		<file:connection workingDir="C:\Users\Muthu\Priya\Study\Mulesoft\Training" />
+	</file:config>
+	<flow name="batchprocessingFlow" doc:id="9455565e-1930-478b-b220-e60acf4602ba" >
+		<file:listener doc:name="On New or Updated File" doc:id="5d2a4d08-64d7-4595-ad21-e3be68542b94" config-ref="sample">
+			<scheduling-strategy >
+				<cron expression="0 40 8 * * ?" />
+			</scheduling-strategy>
+		</file:listener>
+		<batch:job jobName="batchprocessingBatch_Job" doc:id="ce869814-ceec-4ab2-aca7-1ba1978a63e4" maxFailedRecords="-1">
+			<batch:process-records >
+				<batch:step name="Batch_Step_process" doc:id="e9834c53-c2a1-452b-a471-04221f73281f" >
+					<choice doc:name="Choice" doc:id="4a3d1aa1-2556-4dd9-a80c-97867721c93b" >
+						<when expression='#[(payload[0].Region)=="Europe"]'>
+							<raise-error doc:name="Raise error" doc:id="9ade7bb6-51de-4891-86b5-59d5c95c25a3" type="MULE:EXPRESSION"/>
+						</when>
+						<otherwise >
+							<logger level="INFO" doc:name="Logger" doc:id="916b91a7-1e94-48b3-8df0-fd91725f46dd" message="Logging batch payload #[payload]"/>
+						</otherwise>
+					</choice>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="fa312be9-f0ff-46e1-8b71-8d47c0aae1e0" size="5">
+						<ee:transform doc:name="Transform Message" doc:id="b5cf6764-f14d-46c7-9398-c75d2af15b95">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+						<logger level="INFO" doc:name="Logger" doc:id="d2d99702-d04e-4b96-968d-3017f80201cc" message="insert into database #[payload]"/>
+					</batch:aggregator>
+				</batch:step>
+				<batch:step name="Batch_Step_faile_records" doc:id="4a686f58-d13a-48e0-887b-8354c19972c4" acceptPolicy="ONLY_FAILURES">
+					<logger level="INFO" doc:name="Failed records" doc:id="e470a1df-9c56-4ee2-847f-cadadc61a0af" message="Failed record foung #[payload]"/>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="1eeb0421-f2f7-4ee3-a35b-82f144408e03" streaming="true">
+						<ee:transform doc:name="Transform Message" doc:id="8cfdd51d-2eaa-4290-99b3-5d83614792da" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<logger level="INFO" doc:name="Logger" doc:id="de6dc837-9407-4633-ba44-36dba0e132e4" message="Send email for all failed records #[payload]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete>
+				<logger level="INFO" doc:name="Logger" doc:id="52fb3391-f161-4e5a-85b7-9c1cb0073378" message='summary report - #[payload write "application/json"]'/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>
